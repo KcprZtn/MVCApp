@@ -11,28 +11,107 @@ namespace LearningMVC.Controllers
     {
         private readonly IConfiguration configuration;
         
-        public  HomeController(IConfiguration config)
+        public HomeController(IConfiguration config)
         {
             this.configuration = config;
         }
         
         private static IList<PetModel> pets = new List<PetModel>(){};
+        private static LoginModel account = new LoginModel();
 
-        // GET: HomeController
+        // GET: Index
         public ActionResult Index()
         {
-           
             return View();
         }
 
-        // GET: HomeController/Pets
-        public ActionResult Pets()
+        // GET: HomeController/Login
+        public ActionResult Login()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Login(LoginModel acc)
+        {
+            account.Login = acc.Login;
+            account.Password = acc.Password;
+
+            string connectionstring = configuration.GetConnectionString("DefaultConnection");
+            SqlConnection connection = new SqlConnection(connectionstring);
+            connection.Open();
+            SqlCommand com = new SqlCommand($"SELECT Id FROM Accounts WHERE Login = '{acc.Login}' AND Password='{acc.Password}';", connection);
+            var log = com.ExecuteScalar();
+            
+            if (log != null)
+            {
+                connection.Close();
+                account.userId = (int)log;
+                return RedirectToAction(nameof(Pets));
+            }
+            else
+            {
+                connection.Close();
+                return View(nameof(Login));
+            }
+        }
+
+        //POST : HomeController/LogOut
+        [HttpPost]
+        public ActionResult LogOut()
+        {
+            pets.Clear();
+            account.userId = 0;
+            return RedirectToAction(nameof(Index));
+        }
+        // GET: HomeController/Register
+        public ActionResult Register()
+        {
+            return View(new LoginModel());
+        }
+
+        // POST: HomeController/Register
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Register(LoginModel loginmodel)
         {
             string connectionstring = configuration.GetConnectionString("DefaultConnection");
             SqlConnection connection = new SqlConnection(connectionstring);
             connection.Open();
-            SqlCommand com = new SqlCommand("SELECT MAX(Id) FROM Pets;", connection);
-            var max = (int)com.ExecuteScalar();
+            SqlCommand com = new SqlCommand($"INSERT INTO Accounts(Login,Password) VALUES('{loginmodel.Login}','{loginmodel.Password}');", connection);
+            com.ExecuteScalar();
+           
+            connection.Close();
+
+            return RedirectToAction(nameof(Login));
+
+
+        }
+
+
+        // GET: HomeController/Pets
+        public ActionResult Pets()
+        {
+            if(account.userId == 0)
+            {
+               return RedirectToAction(nameof(Index));
+            }
+            string connectionstring = configuration.GetConnectionString("DefaultConnection");        
+            SqlConnection connection = new SqlConnection(connectionstring);
+            connection.Open();
+
+            SqlCommand com = new SqlCommand($"SELECT MAX(Id) FROM Pets WHERE userId = {account.userId};", connection);
+
+            int max = 0;
+            try
+            {
+                max = (int)com.ExecuteScalar();
+            }
+            catch (System.Exception e)
+            {
+                System.Console.WriteLine(e);
+            }
 
             if (!(pets.Count > 0))
             {
@@ -40,24 +119,27 @@ namespace LearningMVC.Controllers
                 {
                     try
                     {
-                        SqlCommand IdCom = new SqlCommand($"SELECT Id FROM Pets WHERE Id = {i}", connection);
-                        SqlCommand NameCom = new SqlCommand($"SELECT Name FROM Pets WHERE Id = {i}", connection);
-                        SqlCommand TypeCom = new SqlCommand($"SELECT Type FROM Pets WHERE Id = {i}", connection);
-                        SqlCommand BirthCom = new SqlCommand($"SELECT BirthYear FROM Pets WHERE Id = {i}", connection);
-                        SqlCommand AliveCom = new SqlCommand($"SELECT isAlive FROM Pets WHERE Id = {i}", connection);
+                        com.CommandText = $"SELECT Id FROM Pets WHERE Id = {i} AND userId={account.userId};";
+                        var pId = (int)com.ExecuteScalar();
 
-                        var pId = (int)IdCom.ExecuteScalar();
-                        var pName = (string)NameCom.ExecuteScalar();
-                        var pType = (string)TypeCom.ExecuteScalar();
-                        var pBirth = (int)BirthCom.ExecuteScalar();
-                        var pAlive = (bool)AliveCom.ExecuteScalar();
+                        com.CommandText = $"SELECT Name FROM Pets WHERE Id = {i} AND userId={account.userId};";
+                        var pName = (string)com.ExecuteScalar();
+
+                        com.CommandText = $"SELECT Type FROM Pets WHERE Id = {i} AND userId={account.userId};";
+                        var pType = (string)com.ExecuteScalar();
+
+                        com.CommandText = $"SELECT BirthYear FROM Pets WHERE Id = {i} AND userId={account.userId};";
+                        var pBirth = (int)com.ExecuteScalar();
+
+                        com.CommandText = $"SELECT isAlive FROM Pets WHERE Id = {i} AND userId={account.userId};";
+                        var pAlive = (bool)com.ExecuteScalar();
 
                         pets.Add(new PetModel() { Id = pId, Name = pName, Type = pType, BirthYear = pBirth, isAlive = pAlive });
                         
                     }
                     catch (System.Exception e)
                     {
-                        
+                        System.Console.WriteLine(e);
 
                     }
 
@@ -84,7 +166,7 @@ namespace LearningMVC.Controllers
             string connectionstring = configuration.GetConnectionString("DefaultConnection");
             SqlConnection connection = new SqlConnection(connectionstring);
             connection.Open();
-            SqlCommand createCom = new SqlCommand($"INSERT INTO Pets(Name,Type,BirthYear,isAlive) VALUES('{petmodel.Name}','{petmodel.Type}',{petmodel.BirthYear},'{petmodel.isAlive}');", connection);
+            SqlCommand createCom = new SqlCommand($"INSERT INTO Pets(Name,Type,BirthYear,isAlive,userId) VALUES('{petmodel.Name}','{petmodel.Type}',{petmodel.BirthYear},'{petmodel.isAlive}',{account.userId});", connection);
             createCom.ExecuteScalar();
             pets.Add(petmodel);
             connection.Close();
@@ -125,8 +207,8 @@ namespace LearningMVC.Controllers
             }
             catch (System.Exception e)
             {
-               
-                
+
+                System.Console.WriteLine(e);
             }
            
             return RedirectToAction(nameof(Pets));
