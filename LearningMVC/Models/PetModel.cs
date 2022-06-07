@@ -13,7 +13,7 @@ namespace LearningMVC.Models
         public string Name { get; set; }
 
         
-        [DisplayName("Type of pet")]
+        [DisplayName("Species")]
         [Required(ErrorMessage = "You need to specify what type of animal your pet is.")]
         public string Type { get; set; }
 

@@ -10,7 +10,7 @@ namespace LearningMVC.Models
         public int userId { get; set; }
 
         [Required(ErrorMessage = "Please enter login.")]
-        [DisplayName("Login")]
+        [DisplayName("Username")]
         public string Login { get; set; }
 
         [DisplayName("Password")]

@@ -48,10 +48,12 @@ namespace LearningMVC.Controllers
             {
                 connection.Close();
                 account.userId = (int)log;
+                ViewData["WrongAcc"] = "";
                 return RedirectToAction(nameof(Pets));
             }
             else
             {
+                ViewData["WrongAcc"] = "Account not found. Check if username and password are correct.";
                 connection.Close();
                 return View(nameof(Login));
             }
@@ -63,6 +65,7 @@ namespace LearningMVC.Controllers
         {
             pets.Clear();
             account.userId = 0;
+            
             return RedirectToAction(nameof(Index));
         }
         // GET: HomeController/Register
@@ -76,16 +79,26 @@ namespace LearningMVC.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Register(LoginModel loginmodel)
         {
+
             string connectionstring = configuration.GetConnectionString("DefaultConnection");
             SqlConnection connection = new SqlConnection(connectionstring);
             connection.Open();
-            SqlCommand com = new SqlCommand($"INSERT INTO Accounts(Login,Password) VALUES('{loginmodel.Login}','{loginmodel.Password}');", connection);
-            com.ExecuteScalar();
-           
-            connection.Close();
+            SqlCommand com = new SqlCommand($"SELECT COUNT(*) FROM Accounts WHERE Login='{loginmodel.Login}';", connection);
+            int c = (int)com.ExecuteScalar();
+            if (c == 0)
+            {
+                ViewData["DuplicateError"] = "";
+                com.CommandText = $"INSERT INTO Accounts(Login,Password) VALUES('{loginmodel.Login}','{loginmodel.Password}');";
+                com.ExecuteScalar();
 
-            return RedirectToAction(nameof(Login));
-
+                connection.Close();
+                return RedirectToAction(nameof(Login));
+            }
+            else
+            {
+                ViewData["DuplicateError"] = "Choose different login.";
+                return View(nameof(Register));
+            }
 
         }
 
@@ -155,6 +168,10 @@ namespace LearningMVC.Controllers
         // GET: HomeController/Create
         public ActionResult Create()
         {
+            if (account.userId == 0)
+            {
+                return RedirectToAction(nameof(Index));
+            }
             return View(new PetModel());
         }
 
@@ -179,6 +196,10 @@ namespace LearningMVC.Controllers
         // GET: HomeController/Edit/5
         public ActionResult Edit(int id)
         {
+            if (account.userId == 0)
+            {
+                return RedirectToAction(nameof(Index));
+            }
             return View(pets.FirstOrDefault(x => x.Id == id));
         }
 
@@ -219,6 +240,10 @@ namespace LearningMVC.Controllers
         // GET: HomeController/Delete/5
         public ActionResult Delete(int id)
         {
+            if (account.userId == 0)
+            {
+                return RedirectToAction(nameof(Index));
+            }
             return View(pets.FirstOrDefault(x => x.Id == id));
         }
 

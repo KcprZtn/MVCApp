@@ -7,7 +7,7 @@
 <h1>Pets</h1>
 
 <p>
-    <a asp-action="Create">New Pet</a>
+    <a asp-action="Create">Add new pet</a>
 </p>
 <table class="table">
     <thead>
@@ -52,3 +52,9 @@
 }
     </tbody>
 </table>
+
+<form asp-action='LogOut' id='LogOut'> 
+                    <input class='btn btn-dark' id='logoutbtn' type='submit' value='Log out' /> 
+                    </form>
+                     
+                   
