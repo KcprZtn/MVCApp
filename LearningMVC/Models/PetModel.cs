@@ -14,7 +14,7 @@ namespace LearningMVC.Models
 
         
         [DisplayName("Species")]
-        [Required(ErrorMessage = "You need to specify what type of animal your pet is.")]
+        [Required(ErrorMessage = "You need to specify what specie is your pet.")]
         public string Type { get; set; }
 
         [DisplayName("Year of birth")]

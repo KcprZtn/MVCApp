@@ -37,7 +37,7 @@ namespace LearningMVC.Controllers
         {
             account.Login = acc.Login;
             account.Password = acc.Password;
-
+            
             string connectionstring = configuration.GetConnectionString("DefaultConnection");
             SqlConnection connection = new SqlConnection(connectionstring);
             connection.Open();
