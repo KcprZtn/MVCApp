@@ -4,15 +4,15 @@
     ViewData["Title"] = "Pets";
 }
 
-<h1>Pets</h1>
+<h1>List of your pets</h1>
 
 <p>
-    <a asp-action="Create">Add new pet</a>
+    <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("Create", "Home")'">Add new pet</button>
 </p>
 <table class="table">
     <thead>
         <tr>
-            @Html.DisplayNameFor(model=>model.Name);
+            
             <th>
                 @Html.DisplayNameFor(model => model.Name)
             </th>
@@ -20,7 +20,7 @@
                 @Html.DisplayNameFor(model => model.Type)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.BirthYear)
+                Age
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.isAlive)
@@ -31,7 +31,6 @@
     <tbody>
 @foreach (var item in Model) {
         <tr>
-            
             <td>
                 @Html.DisplayFor(modelItem => item.Name)
             </td>
@@ -39,14 +38,15 @@
                 @Html.DisplayFor(modelItem => item.Type)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.BirthYear)
+                @{int age = DateTime.Now.Year - item.BirthYear;}
+                @age
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.isAlive)
             </td>
             <td>
-                @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
-                @Html.ActionLink("Delete", "Delete", new { id=item.Id })
+               <button type="button" class="btn btn-primary" onclick="location.href='@Url.Action("Edit", "Home",new { id=item.Id })'">Edit</button> |
+               <button type="button" class="btn btn-danger" onclick="location.href='@Url.Action("Delete", "Home",new { id=item.Id })'">Delete</button>
             </td>
         </tr>
 }
@@ -54,7 +54,7 @@
 </table>
 
 <form asp-action='LogOut' id='LogOut'> 
-                    <input class='btn btn-dark' id='logoutbtn' type='submit' value='Log out' /> 
-                    </form>
+    <input class='btn btn-dark' id='logoutbtn' type='submit' value='Log out' /> 
+</form>
                      
                    
