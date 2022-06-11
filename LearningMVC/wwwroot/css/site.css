@@ -86,3 +86,7 @@ body {
     font-family: DejaVu Sans Mono, monospace;
    
 }
+
+.btn-group button{
+    margin-right:1vw;
+}

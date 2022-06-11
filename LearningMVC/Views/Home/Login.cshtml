@@ -25,6 +25,26 @@
         </form>
     </div>
 </div>
-<div>
-    <a asp-action="Index">Return</a>
+<div class="btn-group" role="group" aria-label="Basic example">
+    <div>
+        <button type="button" class="btn btn-secondary" onclick="location.href='@Url.Action("Index", "Home")'">Return</button>
+    </div>
+    <p>
+      <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#collapseI">
+        ?
+      </button>
+    </p>
+    <div style="min-height: 120px;">
+      <div class="collapse" id="collapseI">
+        <div class="card card-body" style="width: 300px;">
+          Accounts for testing:<br />
+
+          Username: test1
+          Password: test1
+
+          Username: test2
+          Password: test2
+        </div>
+      </div>
+    </div>
 </div>

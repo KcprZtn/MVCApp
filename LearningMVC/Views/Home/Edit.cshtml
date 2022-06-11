@@ -38,9 +38,8 @@
 </div>
 
 <div>
-    <a asp-action="Pets">Return</a>
+    <button type="button" class="btn btn-secondary" onclick="location.href='@Url.Action("Pets", "Home")'">Return</button>
 </div>
-
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

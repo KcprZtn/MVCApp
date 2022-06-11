@@ -38,6 +38,6 @@
     
     <form asp-action="Delete">
         <input type="submit" value="Delete" class="btn btn-danger" /> |
-        <a asp-action="Pets">Return</a>
+        <button type="button" class="btn btn-secondary" onclick="location.href='@Url.Action("Pets", "Home")'">Return</button>
     </form>
 </div>
