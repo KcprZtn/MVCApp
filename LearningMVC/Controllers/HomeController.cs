@@ -2,32 +2,43 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Data.SqlClient;
+using MySqlConnector;
+using System;
 
 namespace LearningMVC.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly IConfiguration configuration;
-        
-        public HomeController(IConfiguration config)
+    
+
+        MySqlConnectionStringBuilder builder = new MySqlConnectionStringBuilder
         {
-            this.configuration = config;
-        }
-        
+            Server = "eu-cdbr-west-02.cleardb.net",
+            UserID = "b5fcac75dad61f",
+            Password = "fee670d3",
+            Database = "heroku_d8dc7e53e550dec",
+        };
+
+        /*
+          "ConnectionStrings": {
+            "DefaultConnection": "Server=eu-cdbr-west-02.cleardb.net;Database=heroku_d8dc7e53e550dec;User=b5fcac75dad61f;Password=fee670d3;Trusted_Connection=True;"
+          },
+         */
+
         private static IList<PetModel> pets = new List<PetModel>(){};
         private static LoginModel account = new LoginModel();
 
         // GET: Index
         public ActionResult Index()
         {
+            pets.Clear();
             return View();
         }
 
         // GET: HomeController/Login
         public ActionResult Login()
         {
+            pets.Clear();
             return View();
         }
 
@@ -37,11 +48,12 @@ namespace LearningMVC.Controllers
         {
             account.Login = acc.Login;
             account.Password = acc.Password;
-            
-            string connectionstring = configuration.GetConnectionString("DefaultConnection");
-            SqlConnection connection = new SqlConnection(connectionstring);
+
+            using var connection = new MySqlConnection(builder.ConnectionString);
             connection.Open();
-            SqlCommand com = new SqlCommand($"SELECT Id FROM Accounts WHERE Login = '{acc.Login}' AND Password='{acc.Password}';", connection);
+          
+            using var com = connection.CreateCommand();
+            com.CommandText = $"SELECT Id FROM Accounts WHERE Login = '{acc.Login}' AND Password = '{acc.Password}';";
             var log = com.ExecuteScalar();
             
             if (log != null)
@@ -71,6 +83,7 @@ namespace LearningMVC.Controllers
         // GET: HomeController/Register
         public ActionResult Register()
         {
+            pets.Clear();
             return View(new LoginModel());
         }
 
@@ -80,11 +93,11 @@ namespace LearningMVC.Controllers
         public ActionResult Register(LoginModel loginmodel)
         {
 
-            string connectionstring = configuration.GetConnectionString("DefaultConnection");
-            SqlConnection connection = new SqlConnection(connectionstring);
+            using var connection = new MySqlConnection(builder.ConnectionString);
             connection.Open();
-            SqlCommand com = new SqlCommand($"SELECT COUNT(*) FROM Accounts WHERE Login='{loginmodel.Login}';", connection);
-            int c = (int)com.ExecuteScalar();
+            using var com = connection.CreateCommand();
+            com.CommandText = $"SELECT COUNT(*) FROM Accounts WHERE Login='{loginmodel.Login}';";
+            long c = (long)com.ExecuteScalar();
             if (c == 0)
             {
                 ViewData["DuplicateError"] = "";
@@ -110,11 +123,10 @@ namespace LearningMVC.Controllers
             {
                return RedirectToAction(nameof(Index));
             }
-            string connectionstring = configuration.GetConnectionString("DefaultConnection");        
-            SqlConnection connection = new SqlConnection(connectionstring);
+            using var connection = new MySqlConnection(builder.ConnectionString);
             connection.Open();
-
-            SqlCommand com = new SqlCommand($"SELECT MAX(Id) FROM Pets WHERE userId = {account.userId};", connection);
+            using var com = connection.CreateCommand();
+            com.CommandText = $"SELECT MAX(Id) FROM Pets WHERE userId = {account.userId};";
 
             int max = 0;
             try
@@ -128,35 +140,18 @@ namespace LearningMVC.Controllers
 
             if (!(pets.Count > 0))
             {
-                for (int i = 1; i <= max; i++)
+                com.CommandText = $"SELECT Id,Name,Type,BirthYear,isAlive FROM Pets WHERE userId={account.userId};";
+                using var reader = com.ExecuteReader();
+                while (reader.Read())
                 {
-                    try
-                    {
-                        com.CommandText = $"SELECT Id FROM Pets WHERE Id = {i} AND userId={account.userId};";
-                        var pId = (int)com.ExecuteScalar();
-
-                        com.CommandText = $"SELECT Name FROM Pets WHERE Id = {i} AND userId={account.userId};";
-                        var pName = (string)com.ExecuteScalar();
-
-                        com.CommandText = $"SELECT Type FROM Pets WHERE Id = {i} AND userId={account.userId};";
-                        var pType = (string)com.ExecuteScalar();
-
-                        com.CommandText = $"SELECT BirthYear FROM Pets WHERE Id = {i} AND userId={account.userId};";
-                        var pBirth = (int)com.ExecuteScalar();
-
-                        com.CommandText = $"SELECT isAlive FROM Pets WHERE Id = {i} AND userId={account.userId};";
-                        var pAlive = (bool)com.ExecuteScalar();
-
-                        pets.Add(new PetModel() { Id = pId, Name = pName, Type = pType, BirthYear = pBirth, isAlive = pAlive });
-                        
-                    }
-                    catch (System.Exception e)
-                    {
-                        System.Console.WriteLine(e);
-
-                    }
-
+                    var pId = reader.GetInt32("Id");
+                    var pName = reader.GetString("Name");
+                    var pType = reader.GetString("Type");
+                    var pBirth = reader.GetInt32("BirthYear");
+                    var pAlive = reader.GetBoolean("isAlive");
+                    pets.Add(new PetModel() { Id = pId, Name = pName, Type = pType, BirthYear = pBirth, isAlive = pAlive });
                 }
+                
             }
          
             connection.Close();
@@ -180,11 +175,13 @@ namespace LearningMVC.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Create(PetModel petmodel)
         {
-            string connectionstring = configuration.GetConnectionString("DefaultConnection");
-            SqlConnection connection = new SqlConnection(connectionstring);
+            using var connection = new MySqlConnection(builder.ConnectionString);
             connection.Open();
-            SqlCommand createCom = new SqlCommand($"INSERT INTO Pets(Name,Type,BirthYear,isAlive,userId) VALUES('{petmodel.Name}','{petmodel.Type}',{petmodel.BirthYear},'{petmodel.isAlive}',{account.userId});", connection);
-            createCom.ExecuteScalar();
+            using var com = connection.CreateCommand();
+            int alive = petmodel.isAlive ? 1 : 0;
+                
+            com.CommandText = $"INSERT INTO Pets(Name,Type,BirthYear,isAlive,userId) VALUES('{petmodel.Name}','{petmodel.Type}',{petmodel.BirthYear},'{alive}',{account.userId});";
+            com.ExecuteNonQuery();
             pets.Add(petmodel);
             connection.Close();
            
@@ -216,14 +213,14 @@ namespace LearningMVC.Controllers
                 pet.Type = petmodel.Type;
                 pet.BirthYear = petmodel.BirthYear;
                 pet.isAlive = petmodel.isAlive;
+                int alive = petmodel.isAlive ? 1 : 0;
 
-
-                string connectionstring = configuration.GetConnectionString("DefaultConnection");
-                SqlConnection connection = new SqlConnection(connectionstring);
+                using var connection = new MySqlConnection(builder.ConnectionString);
 
                 connection.Open();
-                SqlCommand createCom = new SqlCommand($"UPDATE Pets SET Name = '{petmodel.Name}', Type = '{petmodel.Type}', BirthYear = {petmodel.BirthYear}, isAlive = '{petmodel.isAlive}'  WHERE Id = {id};", connection);
-                createCom.ExecuteScalar();
+                using var com = connection.CreateCommand();
+                com.CommandText = $"UPDATE Pets SET Name = '{petmodel.Name}', Type = '{petmodel.Type}', BirthYear = {petmodel.BirthYear}, isAlive = '{alive}'  WHERE Id = {id};";
+                com.ExecuteScalar();
                 connection.Close();
             }
             catch (System.Exception e)
@@ -252,11 +249,11 @@ namespace LearningMVC.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Delete(int id, PetModel petmodel)
         {
-            string connectionstring = configuration.GetConnectionString("DefaultConnection");
-            SqlConnection connection = new SqlConnection(connectionstring);
+            using var connection = new MySqlConnection(builder.ConnectionString);
             connection.Open();
-            SqlCommand deleteCom = new SqlCommand($"DELETE FROM Pets WHERE Id = {id}",connection);
-            deleteCom.ExecuteScalar();
+            using var com = connection.CreateCommand();
+            com.CommandText = $"DELETE FROM Pets WHERE Id = {id};";
+            com.ExecuteNonQuery();
             pets.Remove(pets.FirstOrDefault(x => x.Id == id));
 
             connection.Close();
