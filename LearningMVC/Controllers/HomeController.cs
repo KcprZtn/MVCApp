@@ -51,9 +51,11 @@ namespace LearningMVC.Controllers
 
             using var connection = new MySqlConnection(builder.ConnectionString);
             connection.Open();
-          
+            byte[] data = System.Text.Encoding.ASCII.GetBytes(acc.Password);
+            data = new System.Security.Cryptography.SHA256Managed().ComputeHash(data);
+            String hash = System.Text.Encoding.ASCII.GetString(data);
             using var com = connection.CreateCommand();
-            com.CommandText = $"SELECT Id FROM Accounts WHERE Login = '{acc.Login}' AND Password = '{acc.Password}';";
+            com.CommandText = $"SELECT Id FROM Accounts WHERE Login = '{acc.Login}' AND Password = '{hash}';";
             var log = com.ExecuteScalar();
             
             if (log != null)
@@ -101,7 +103,10 @@ namespace LearningMVC.Controllers
             if (c == 0)
             {
                 ViewData["DuplicateError"] = "";
-                com.CommandText = $"INSERT INTO Accounts(Login,Password) VALUES('{loginmodel.Login}','{loginmodel.Password}');";
+                byte[] data = System.Text.Encoding.ASCII.GetBytes(loginmodel.Password);
+                data = new System.Security.Cryptography.SHA256Managed().ComputeHash(data);
+                String hash = System.Text.Encoding.ASCII.GetString(data);
+                com.CommandText = $"INSERT INTO Accounts(Login,Password) VALUES('{loginmodel.Login}','{hash}');";
                 com.ExecuteScalar();
 
                 connection.Close();
