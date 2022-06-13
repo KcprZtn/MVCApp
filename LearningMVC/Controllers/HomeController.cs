@@ -18,12 +18,7 @@ namespace LearningMVC.Controllers
             Password = "fee670d3",
             Database = "heroku_d8dc7e53e550dec",
         };
-
-        /*
-          "ConnectionStrings": {
-            "DefaultConnection": "Server=eu-cdbr-west-02.cleardb.net;Database=heroku_d8dc7e53e550dec;User=b5fcac75dad61f;Password=fee670d3;Trusted_Connection=True;"
-          },
-         */
+ 
 
         private static IList<PetModel> pets = new List<PetModel>(){};
         private static LoginModel account = new LoginModel();
@@ -46,8 +41,6 @@ namespace LearningMVC.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Login(LoginModel acc)
         {
-            account.Login = acc.Login;
-            account.Password = acc.Password;
 
             using var connection = new MySqlConnection(builder.ConnectionString);
             connection.Open();
@@ -128,20 +121,12 @@ namespace LearningMVC.Controllers
             {
                return RedirectToAction(nameof(Index));
             }
+
             using var connection = new MySqlConnection(builder.ConnectionString);
             connection.Open();
             using var com = connection.CreateCommand();
             com.CommandText = $"SELECT MAX(Id) FROM Pets WHERE userId = {account.userId};";
 
-            int max = 0;
-            try
-            {
-                max = (int)com.ExecuteScalar();
-            }
-            catch (System.Exception e)
-            {
-                System.Console.WriteLine(e);
-            }
 
             if (!(pets.Count > 0))
             {
