@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using MySqlConnector;
 using System;
+using Microsoft.AspNetCore.Http;
 
 namespace LearningMVC.Controllers
 {
     public class HomeController : Controller
     {
     
-
+       
         MySqlConnectionStringBuilder builder = new MySqlConnectionStringBuilder
         {
             Server = "eu-cdbr-west-02.cleardb.net",
@@ -21,7 +22,7 @@ namespace LearningMVC.Controllers
  
 
         private static IList<PetModel> pets = new List<PetModel>(){};
-        private static LoginModel account = new LoginModel();
+        //private static LoginModel account = new LoginModel();
 
         // GET: Index
         public ActionResult Index()
@@ -54,7 +55,7 @@ namespace LearningMVC.Controllers
             if (log != null)
             {
                 connection.Close();
-                account.userId = (int)log;
+                HttpContext.Session.SetInt32("userID", (int)log);              
                 ViewData["WrongAcc"] = "";
                 return RedirectToAction(nameof(Pets));
             }
@@ -71,8 +72,8 @@ namespace LearningMVC.Controllers
         public ActionResult LogOut()
         {
             pets.Clear();
-            account.userId = 0;
-            
+            HttpContext.Session.Clear();
+
             return RedirectToAction(nameof(Index));
         }
         // GET: HomeController/Register
@@ -117,7 +118,7 @@ namespace LearningMVC.Controllers
         // GET: HomeController/Pets
         public ActionResult Pets()
         {
-            if(account.userId == 0)
+            if(HttpContext.Session.GetInt32("userID") == null)
             {
                return RedirectToAction(nameof(Index));
             }
@@ -125,12 +126,12 @@ namespace LearningMVC.Controllers
             using var connection = new MySqlConnection(builder.ConnectionString);
             connection.Open();
             using var com = connection.CreateCommand();
-            com.CommandText = $"SELECT MAX(Id) FROM Pets WHERE userId = {account.userId};";
+            com.CommandText = $"SELECT MAX(Id) FROM Pets WHERE userId = {HttpContext.Session.GetInt32("userID")};";
 
 
             if (!(pets.Count > 0))
             {
-                com.CommandText = $"SELECT Id,Name,Type,BirthYear,isAlive FROM Pets WHERE userId={account.userId};";
+                com.CommandText = $"SELECT Id,Name,Type,BirthYear,isAlive FROM Pets WHERE userId={HttpContext.Session.GetInt32("userID")};";
                 using var reader = com.ExecuteReader();
                 while (reader.Read())
                 {
@@ -153,7 +154,7 @@ namespace LearningMVC.Controllers
         // GET: HomeController/Create
         public ActionResult Create()
         {
-            if (account.userId == 0)
+            if (HttpContext.Session.GetInt32("userID") == null)
             {
                 return RedirectToAction(nameof(Index));
             }
@@ -170,7 +171,7 @@ namespace LearningMVC.Controllers
             using var com = connection.CreateCommand();
             int alive = petmodel.isAlive ? 1 : 0;
                 
-            com.CommandText = $"INSERT INTO Pets(Name,Type,BirthYear,isAlive,userId) VALUES('{petmodel.Name}','{petmodel.Type}',{petmodel.BirthYear},'{alive}',{account.userId});";
+            com.CommandText = $"INSERT INTO Pets(Name,Type,BirthYear,isAlive,userId) VALUES('{petmodel.Name}','{petmodel.Type}',{petmodel.BirthYear},'{alive}',{HttpContext.Session.GetInt32("userID")});";
             com.ExecuteNonQuery();
             pets.Add(petmodel);
             connection.Close();
@@ -183,7 +184,7 @@ namespace LearningMVC.Controllers
         // GET: HomeController/Edit/5
         public ActionResult Edit(int id)
         {
-            if (account.userId == 0)
+            if (HttpContext.Session.GetInt32("userID")==null)
             {
                 return RedirectToAction(nameof(Index));
             }
@@ -227,7 +228,7 @@ namespace LearningMVC.Controllers
         // GET: HomeController/Delete/5
         public ActionResult Delete(int id)
         {
-            if (account.userId == 0)
+            if (HttpContext.Session.GetInt32("userID") == null)
             {
                 return RedirectToAction(nameof(Index));
             }
